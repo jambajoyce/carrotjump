@@ -12,14 +12,11 @@ import com.badlogic.gdx.math.Rectangle;
 public class Game extends ApplicationAdapter {
         private SpriteBatch batch;
         private Texture img;
-        private Texture playerImage;
-        private Rectangle playerBounds;
+        private Player player;
         private Platform[] platforms;
         private int numPlatforms = 6;
         private int width;
         private int height;
-        private Vector2 playerPosition;
-        private Vector2 playerVelocity;
         private Vector2 gravity;
         private int score;
         private int state;
@@ -34,14 +31,11 @@ public class Game extends ApplicationAdapter {
         public void create () {
             batch = new SpriteBatch();
             img = new Texture("missionbit.png");
-            playerImage = new Texture("");
             width = Gdx.graphics.getWidth();
             height = Gdx.graphics.getHeight();
-            playerPosition = new Vector2();
-            playerVelocity = new Vector2();
             gravity = new Vector2();
-            playerBounds = new Rectangle();
             platforms = new Platform[numPlatforms];
+            player = new Player();
 
             resetGame();
         }
@@ -57,9 +51,6 @@ public class Game extends ApplicationAdapter {
 
         private void resetGame() {
             score = 0;
-            playerPosition.set(width/2, 0);
-            playerVelocity.set(0, 0);
-            playerBounds.set(width/2, 0, playerImage.getWidth(), playerImage.getHeight());
             for (int i = 0; i < numPlatforms; i++) {
                 platforms[i] = new Platform();
             }
@@ -74,32 +65,50 @@ public class Game extends ApplicationAdapter {
             if (state == state_start) {
                 if (Gdx.input.justTouched()) {
                     state = state_play;
-                    playerVelocity.y = 1000;
-                    playerVelocity.add(gravity);
-                    playerPosition.mulAdd(playerVelocity, deltaTime);
+                    player.velocity.y = 1000;
+                    player.velocity.add(gravity);
+                    player.position.mulAdd(player.velocity, deltaTime);
 
                 }
             }
-            if (state == state_play) {
-                playerVelocity.add(gravity); //the force of gravity will make the player decelerate
-                playerPosition.mulAdd(playerVelocity, deltaTime); //use the player's current velocity and the time elapsed to determine the player's new position
 
+            if (state == state_play) {
+                player.velocity.add(gravity); //the force of gravity will make the player decelerate
+                player.position.mulAdd(player.velocity, deltaTime); //use the player's current velocity and the time elapsed to determine the player's new position
 
                 for (int i = 0; i < numPlatforms; i++) {
-                    if (playerBounds.overlaps(platforms[i].bounds)) {
-                        playerVelocity.y = 1000;
+                    if (player.bounds.overlaps(platforms[i].bounds)) {
+                        if (!platforms[i].touched) {
+                            platforms[i].touched = true;
+                            score += 1 ;
+                        }
+                        player.velocity.y = player.velocity.y + 1000;
                     }
                 }
             }
 
-            playerBounds.setX(playerPosition.x);
-            playerBounds.setY(playerPosition.y);
+            player.bounds.setX(player.position.x);
+            player.bounds.setY(player.position.y);
         }
 
         private void drawGame() {
+
             batch.begin();
+
             if (state == state_start) {
                 batch.draw(img, 0, 0);
+            }
+
+            if (state == state_play) {
+
+                // draw player
+                batch.draw(player.image, player.position.x, player.position.y);
+
+               // draw platforms
+                for (int i = 0; i < numPlatforms; i++) {
+                    batch.draw(platforms[i].image, platforms[i].position.x, platforms[i].position.y);
+
+                }
             }
             batch.end();
         }
